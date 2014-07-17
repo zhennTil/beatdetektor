@@ -100,18 +100,20 @@
 
 #include <map>
 #include <vector>
-#include <math.h>
+#include <cmath>
 
 #define BD_DETECTION_RANGES 128
-#define BD_DETECTION_RATE 12.0
-#define BD_DETECTION_FACTOR 0.925
+#define BD_DETECTION_RATE 12.0f
+#define BD_DETECTION_FACTOR 0.925f
 
-#define BD_QUALITY_TOLERANCE 0.96
-#define BD_QUALITY_DECAY 0.95
-#define BD_QUALITY_REWARD 7.0
-#define BD_QUALITY_STEP 0.1
-#define BD_FINISH_LINE 60.0
+#define BD_QUALITY_TOLERANCE 0.96f
+#define BD_QUALITY_DECAY 0.95f
+#define BD_QUALITY_REWARD 7.0f
+#define BD_QUALITY_STEP 0.1f
+#define BD_FINISH_LINE 60.0f
 #define BD_MINIMUM_CONTRIBUTIONS 6
+
+#define REWARD_VALS 7
 
 class BeatDetektor
 {
@@ -175,43 +177,42 @@ public:
 	std::map<int,int> contribution_counter;
 #endif	
 	
-	BeatDetektor(float BPM_MIN_in=100.0,float BPM_MAX_in=200.0, BeatDetektor *link_src = NULL) :
+	BeatDetektor(float BPM_MIN_in=100.0f, float BPM_MAX_in=199.0f, BeatDetektor *link_src = NULL) :
+		current_bpm(0.0f),
+		winning_bpm(0.0f), 
+		win_val(0.0f),
+		win_bpm_int(0),
+		win_val_lo(0.0f),
+		win_bpm_int_lo(0),
 	
-	current_bpm(0.0),
-	winning_bpm(0.0), 
-	win_val(0.0),
-	win_bpm_int(0),
-	win_val_lo(0.0),
-	win_bpm_int_lo(0),
+		bpm_predict(0),
 	
-	bpm_predict(0),
+		is_erratic(false),
+		bpm_offset(0.0f),
+		last_timer(0.0f),
+		last_update(0.0f),
+		total_time(0.0f),
 	
-	is_erratic(false),
-	bpm_offset(0.0),
-	last_timer(0.0),
-	last_update(0.0),
-	total_time(0.0),
+		bpm_timer(0.0f),
+		beat_counter(0),
+		half_counter(0),
+		quarter_counter(0),
+		src(link_src),
 	
-	bpm_timer(0.0),
-	beat_counter(0),
-	half_counter(0),
-	quarter_counter(0),
-	src(link_src),
-	
-	//	quality_minimum(BD_QUALITY_MINIMUM),
-	quality_reward(BD_QUALITY_REWARD),
-	detection_rate(BD_DETECTION_RATE),
-	finish_line(BD_FINISH_LINE),
-	minimum_contributions(BD_MINIMUM_CONTRIBUTIONS),
-	detection_factor(BD_DETECTION_FACTOR),
-	quality_total(1.0),
-	quality_avg(1.0),
-	quality_decay(BD_QUALITY_DECAY),
-	ma_quality_avg(0.001),
-	ma_quality_lo(1.0),
-	ma_quality_total(1.0)
+		//	quality_minimum(BD_QUALITY_MINIMUM),
+		quality_reward(BD_QUALITY_REWARD),
+		detection_rate(BD_DETECTION_RATE),
+		finish_line(BD_FINISH_LINE),
+		minimum_contributions(BD_MINIMUM_CONTRIBUTIONS),
+		detection_factor(BD_DETECTION_FACTOR),
+		quality_total(1.0f),
+		quality_avg(1.0f),
+		quality_decay(BD_QUALITY_DECAY),
+		ma_quality_avg(0.001f),
+		ma_quality_lo(1.0f),
+		ma_quality_total(1.0f)
 #if DEVTEST_BUILD
-	,debugmode(false)
+		,debugmode(false)
 #endif	
 	
 	{
@@ -225,11 +226,19 @@ public:
 		for (int i = 0; i < BD_DETECTION_RANGES; i++) 
 		{
 			//			ma_bpm_range[i] = maa_bpm_range[i] = 60.0/(float)(BPM_MIN + (1.0+sin(8.0*M_PI*((float)i/(float)BD_DETECTION_RANGES))/2.0)*((BPM_MAX-BPM_MIN)/2));			
-			ma_bpm_range[i] = maa_bpm_range[i] = 60.0/(float)(BPM_MIN+5)+ ((60.0/(float)(BPM_MAX-5)-60.0/(float)(BPM_MIN+5)) * ((float)i/(float)BD_DETECTION_RANGES));
+			ma_bpm_range[i] =
+				maa_bpm_range[i] =
+				60.0f/(BPM_MIN+5)
+				+ (
+					( 60.0f/(BPM_MAX-5) - 60.0f/(BPM_MIN+5) )
+					* ( (float)i/(float)BD_DETECTION_RANGES )
+				);
+
 			if (reset_freq) 
 			{
 				a_freq_range[i] = ma_freq_range[i] = maa_freq_range[i] = 0;
 			}
+
 			last_detection[i] = 0;
 			detection_quality[i] = 0;
 			detection[i] = false;
@@ -237,8 +246,8 @@ public:
 		}
 		
 		total_time = 0;
-		maa_quality_avg = 500.0;
-		bpm_offset = bpm_timer = last_update = last_timer = winning_bpm = current_bpm = win_val = win_bpm_int = 0;
+		maa_quality_avg = 500.0f;
+		bpm_offset = bpm_timer = last_update = last_timer = winning_bpm = current_bpm = win_val = (float)(win_bpm_int = 0);
 		bpm_contest.clear();
 		bpm_contest_lo.clear();
 #if DEVTEST_BUILD

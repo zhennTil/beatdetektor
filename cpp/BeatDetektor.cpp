@@ -34,6 +34,8 @@
 
 #include "BeatDetektor.h"
 
+using namespace std;
+
 void BeatDetektor::process(float timer_seconds, std::vector<float> &fft_data)
 {
 	if (!last_timer) { last_timer = timer_seconds; return; }	// ignore 0 start time
@@ -47,18 +49,19 @@ void BeatDetektor::process(float timer_seconds, std::vector<float> &fft_data)
 	
 	total_time+=last_update;
 	
-	unsigned int range_step = (fft_data.size()/BD_DETECTION_RANGES);
+	size_t range_step = (fft_data.size()/BD_DETECTION_RANGES);
 	unsigned int range = 0;
-	int i,x;
+	size_t i,x;
 	float v;
 	
-	float bpm_floor = 60.0/BPM_MAX;
-	float bpm_ceil = 60.0/BPM_MIN;
+	float bpm_floor = 60.0f/BPM_MAX;
+	float bpm_ceil = 60.0f/BPM_MIN;
 	
 	if (current_bpm != current_bpm) current_bpm = 0;
 	
 	for (x=0; x<fft_data.size(); x+=range_step)
 	{
+		
 		if (!src)
 		{
 			a_freq_range[range] = 0;
@@ -107,9 +110,8 @@ void BeatDetektor::process(float timer_seconds, std::vector<float> &fft_data)
 			// calculate length of gap (since start of last trigger)
 			float trigger_gap = timestamp-last_detection[range];
 			
-#define REWARD_VALS 7
-			float reward_tolerances[REWARD_VALS] = { 0.001, 0.005, 0.01, 0.02, 0.04, 0.08, 0.10  };  
-			float reward_multipliers[REWARD_VALS] = { 20.0, 10.0, 8.0, 1.0, 1.0/2.0, 1.0/4.0, 1.0/8.0 };
+			float reward_tolerances[REWARD_VALS] = { 0.001f, 0.005f, 0.01f, 0.02f, 0.04f, 0.08f, 0.10f  };  
+			float reward_multipliers[REWARD_VALS] = { 20.0f, 10.0f, 8.0f, 1.0f, 1.0f/2.0f, 1.0f/4.0f, 1.0f/8.0f };
 			
 			// trigger falls within acceptable range, 
 			if (trigger_gap < bpm_ceil && trigger_gap > (bpm_floor))
@@ -139,7 +141,7 @@ void BeatDetektor::process(float timer_seconds, std::vector<float> &fft_data)
 			else if (trigger_gap >= bpm_ceil) // low quality, gap exceeds maximum time
 			{
 				// test for 2* beat
-				trigger_gap /= 2.0;
+				trigger_gap /= 2.0f;
 				// && fabs((60.0/trigger_gap)-(60.0/ma_bpm_range[range])) < 50.0
 				if (trigger_gap < bpm_ceil && trigger_gap > (bpm_floor)) for (i = 0; i < REWARD_VALS; i++)
 				{
@@ -154,7 +156,7 @@ void BeatDetektor::process(float timer_seconds, std::vector<float> &fft_data)
 					}
 				}
 				
-				if (!rewarded) trigger_gap *= 2.0;
+				if (!rewarded) trigger_gap *= 2.0f;
 				
 				// start a new gap test, next gap is guaranteed to be longer
 				last_detection[range] = timestamp;					
@@ -162,9 +164,9 @@ void BeatDetektor::process(float timer_seconds, std::vector<float> &fft_data)
 			
 			
 			float qmp = (detection_quality[range]/quality_avg)*BD_QUALITY_STEP;
-			if (qmp > 1.0)
+			if (qmp > 1.0f)
 			{
-				qmp = 1.0;
+				qmp = 1.0f;
 			}
 			
 			if (rewarded)
@@ -185,8 +187,8 @@ void BeatDetektor::process(float timer_seconds, std::vector<float> &fft_data)
 			{
 				if (detection_quality[range] < quality_avg*BD_QUALITY_TOLERANCE && current_bpm)
 				{
-					ma_bpm_range[range] -= (ma_bpm_range[range]-current_bpm) * 0.5;
-					maa_bpm_range[range] -= (maa_bpm_range[range]-ma_bpm_range[range]) * 0.5;
+					ma_bpm_range[range] -= (ma_bpm_range[range]-current_bpm) * 0.5f;
+					maa_bpm_range[range] -= (maa_bpm_range[range]-ma_bpm_range[range]) * 0.5f;
 				}
 				detection_quality[range] -= quality_reward*BD_QUALITY_STEP;
 			}
@@ -197,7 +199,7 @@ void BeatDetektor::process(float timer_seconds, std::vector<float> &fft_data)
 			detection_quality[range] -= detection_quality[range]*BD_QUALITY_STEP*quality_decay*last_update;
 		
 		// quality bottomed out, set to 0
-		if (detection_quality[range] <= 0) detection_quality[range]=0.001;
+		if (detection_quality[range] <= 0) detection_quality[range]=0.001f;
 		
 		
 		detection[range] = det;		
@@ -225,16 +227,16 @@ void BeatDetektor::process(float timer_seconds, std::vector<float> &fft_data)
 	quality_avg = quality_total / (float)BD_DETECTION_RANGES;
 	
 	
-	ma_quality_avg += (quality_avg - ma_quality_avg) * last_update * detection_rate/2.0;
+	ma_quality_avg += (quality_avg - ma_quality_avg) * last_update * detection_rate/2.0f;
 	maa_quality_avg += (ma_quality_avg - maa_quality_avg) * last_update;
-	ma_quality_total += (quality_total - ma_quality_total) * last_update * detection_rate/2.0;
+	ma_quality_total += (quality_total - ma_quality_total) * last_update * detection_rate/2.0f;
 	
-	ma_quality_avg -= 0.98*ma_quality_avg*last_update*3.0;
+	ma_quality_avg -= 0.98f*ma_quality_avg*last_update*3.0f;
 	
-	if (ma_quality_total <= 0) ma_quality_total = 1.0;
-	if (ma_quality_avg <= 0) ma_quality_avg = 1.0;
+	if (ma_quality_total <= 0) ma_quality_total = 1.0f;
+	if (ma_quality_avg <= 0) ma_quality_avg = 1.0f;
 	
-	float avg_bpm_offset = 0.0;
+	float avg_bpm_offset = 0.0f;
 	float offset_test_bpm = current_bpm;
 	std::map<int,float> draft;
 	std::map<int,float> fract_draft;
@@ -249,15 +251,22 @@ void BeatDetektor::process(float timer_seconds, std::vector<float> &fft_data)
 				{
 					bpm_total += maa_bpm_range[x];
 					
-					float draft_float = round((60.0/maa_bpm_range[x])*1000.0);
+					float draft_float = round((60.0f/maa_bpm_range[x])*1000.0f) / 10.f;
 					
-					draft_float = (fabs(ceil(draft_float)-(60.0/current_bpm)*1000.0)<(fabs(floor(draft_float)-(60.0/current_bpm)*1000.0)))?ceil(draft_float/10.0):floor(draft_float/10.0);
+					if ( fabs(ceil(draft_float) - (60.0f / current_bpm)*1000.0f) < fabs(floor(draft_float) - (60.0f / current_bpm)*1000.0f) )
+					{
+						draft_float = ceil(draft_float);
+					}
+					else
+					{
+						draft_float = floor(draft_float);
+					}
+
+					int draft_int = (int)(draft_float/10.0f);
 					
-					float draft_int = (int)(draft_float/10.0);
-					
-					draft[draft_int]+= (detection_quality[x]/quality_avg);
+					draft[draft_int] += detection_quality[x] / quality_avg;
 					bpm_contributions++;
-					if (offset_test_bpm == 0.0) offset_test_bpm = maa_bpm_range[x];
+					if (offset_test_bpm == 0.0f) offset_test_bpm = maa_bpm_range[x];
 					else 
 					{
 						avg_bpm_offset += fabs(offset_test_bpm-maa_bpm_range[x]);
@@ -278,7 +287,7 @@ void BeatDetektor::process(float timer_seconds, std::vector<float> &fft_data)
 	{
 		
 		int draft_winner=0;
-		int win_max = 0;
+		float win_max = 0;
 		
 		for (draft_i = draft.begin(); draft_i != draft.end(); draft_i++)
 		{
@@ -289,7 +298,7 @@ void BeatDetektor::process(float timer_seconds, std::vector<float> &fft_data)
 			}
 		}
 		
-		bpm_predict = (60.0/(float)(draft_winner/10.0));
+		bpm_predict = (60.0f/(float)(draft_winner/10.0f));
 		
 		avg_bpm_offset /= (float)bpm_contributions;
 		bpm_offset = avg_bpm_offset;
@@ -314,7 +323,7 @@ void BeatDetektor::process(float timer_seconds, std::vector<float> &fft_data)
 			if (contest_max < (*contest_i).second) contest_max =(*contest_i).second; 
 			if (((*contest_i).second) > BD_FINISH_LINE/2.0)
 			{
-				bpm_contest_lo[round((float)((*contest_i).first)/10.0)]+= (((*contest_i).second)/10.0)*last_update;
+				bpm_contest_lo[(int)round((*contest_i).first/10.0f)] += (((*contest_i).second)/10.0f)*last_update;
 			}
 		}
 		
@@ -365,7 +374,8 @@ void BeatDetektor::process(float timer_seconds, std::vector<float> &fft_data)
 		// attempt to display the beat at the beat interval ;)
 		if (bpm_timer > winning_bpm/4.0 && current_bpm)
 		{		
-			if (winning_bpm) while (bpm_timer > winning_bpm/4.0) bpm_timer -= winning_bpm/4.0;
+			if (winning_bpm) while (bpm_timer > winning_bpm/4.0f)
+				bpm_timer -= winning_bpm/4.0f;
 			
 			// increment beat counter
 			
@@ -391,7 +401,7 @@ void BeatDetektor::process(float timer_seconds, std::vector<float> &fft_data)
 			if (winner)
 			{
 				win_bpm_int = winner;
-				winning_bpm = 60.0/(float)(winner/10.0);
+				winning_bpm = 60.0f/(winner/10.0f);
 			}
 			
 			
@@ -410,7 +420,7 @@ void BeatDetektor::process(float timer_seconds, std::vector<float> &fft_data)
 			if (winner_lo)
 			{
 				win_bpm_int_lo = winner_lo;
-				winning_bpm_lo = 60.0/(float)(winner_lo);
+				winning_bpm_lo = 60.0f/winner_lo;
 			}
 #if DEVTEST_BUILD
 			if (debugmode && ((quarter_counter % 4) == 0)) 
