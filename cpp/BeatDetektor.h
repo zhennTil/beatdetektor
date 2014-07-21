@@ -97,8 +97,11 @@
 
 */
 
-
+#if DEVTEST_BUILD
 #include <map>
+#endif
+
+#include <unordered_map>
 #include <vector>
 #include <cmath>
 
@@ -169,8 +172,8 @@ public:
 	// current trigger state for range n
 	bool detection[BD_DETECTION_RANGES]; 
 	
-	std::map<int,float> bpm_contest;	// 1/10th
-	std::map<int,float> bpm_contest_lo; // 1/1
+	std::unordered_map<int,float> bpm_contest;	// 1/10th
+	std::unordered_map<int, float> bpm_contest_lo; // 1/1
 	
 #if DEVTEST_BUILD
 	bool debugmode;
@@ -218,6 +221,7 @@ public:
 	{
 		BPM_MIN = BPM_MIN_in;
 		BPM_MAX = BPM_MAX_in;
+
 		reset();
 	}
 	

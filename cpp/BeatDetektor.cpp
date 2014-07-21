@@ -67,7 +67,7 @@ void BeatDetektor::process(float timer_seconds, std::vector<float> &fft_data)
 			a_freq_range[range] = 0;
 			
 			// accumulate frequency values for this range
-			for (i = x; i<x+range_step; i++)
+			for (i = x; i<x+range_step; ++i)
 			{
 				v = fabs(fft_data[i]);
 				a_freq_range[range] += v;
@@ -143,7 +143,7 @@ void BeatDetektor::process(float timer_seconds, std::vector<float> &fft_data)
 				// test for 2* beat
 				trigger_gap /= 2.0f;
 				// && fabs((60.0/trigger_gap)-(60.0/ma_bpm_range[range])) < 50.0
-				if (trigger_gap < bpm_ceil && trigger_gap > (bpm_floor)) for (i = 0; i < REWARD_VALS; i++)
+				if (trigger_gap < bpm_ceil && trigger_gap > (bpm_floor)) for (i = 0; i < REWARD_VALS; ++i)
 				{
 					if (fabs(ma_bpm_range[range]-trigger_gap) < ma_bpm_range[range]*reward_tolerances[i])
 					{
@@ -238,8 +238,8 @@ void BeatDetektor::process(float timer_seconds, std::vector<float> &fft_data)
 	
 	float avg_bpm_offset = 0.0f;
 	float offset_test_bpm = current_bpm;
-	std::map<int,float> draft;
-	std::map<int,float> fract_draft;
+	std::unordered_map<int, float> draft;
+	std::unordered_map<int, float> fract_draft;
 	
 	{
 		for (x=0; x<BD_DETECTION_RANGES; x++)
@@ -281,7 +281,7 @@ void BeatDetektor::process(float timer_seconds, std::vector<float> &fft_data)
 	bool has_prediction = (bpm_contributions>=minimum_contributions)?true:false;
 	
 	
-	std::map<int,float>::iterator draft_i;
+	std::unordered_map<int, float>::iterator draft_i;
 	
 	if (has_prediction) 
 	{
@@ -289,7 +289,7 @@ void BeatDetektor::process(float timer_seconds, std::vector<float> &fft_data)
 		int draft_winner=0;
 		float win_max = 0;
 		
-		for (draft_i = draft.begin(); draft_i != draft.end(); draft_i++)
+		for (draft_i = draft.begin(); draft_i != draft.end(); ++draft_i)
 		{
 			if ((*draft_i).second > win_max)
 			{
@@ -314,11 +314,11 @@ void BeatDetektor::process(float timer_seconds, std::vector<float> &fft_data)
 		
 		
 		// hold a contest for bpm to find the current mode
-		std::map<int,float>::iterator contest_i;
+		std::unordered_map<int, float>::iterator contest_i;
 		
 		float contest_max=0;
 		
-		for (contest_i = bpm_contest.begin(); contest_i != bpm_contest.end(); contest_i++)
+		for (contest_i = bpm_contest.begin(); contest_i != bpm_contest.end(); ++contest_i)
 		{
 			if (contest_max < (*contest_i).second) contest_max =(*contest_i).second; 
 			if (((*contest_i).second) > BD_FINISH_LINE/2.0)
@@ -331,7 +331,7 @@ void BeatDetektor::process(float timer_seconds, std::vector<float> &fft_data)
 		// normalize to a finish line of BD_FINISH_LINE
 		if (contest_max > finish_line) 
 		{
-			for (contest_i = bpm_contest.begin(); contest_i != bpm_contest.end(); contest_i++)
+			for (contest_i = bpm_contest.begin(); contest_i != bpm_contest.end(); ++contest_i)
 			{
 				(*contest_i).second=((*contest_i).second/contest_max)*finish_line;
 			}
@@ -339,14 +339,14 @@ void BeatDetektor::process(float timer_seconds, std::vector<float> &fft_data)
 		
 		contest_max = 0;
 		
-		for (contest_i = bpm_contest_lo.begin(); contest_i != bpm_contest_lo.end(); contest_i++)
+		for (contest_i = bpm_contest_lo.begin(); contest_i != bpm_contest_lo.end(); ++contest_i)
 		{
 			if (contest_max < (*contest_i).second) contest_max =(*contest_i).second; 
 		}
 		
 		if (contest_max > finish_line) 
 		{
-			for (contest_i = bpm_contest_lo.begin(); contest_i != bpm_contest_lo.end(); contest_i++)
+			for (contest_i = bpm_contest_lo.begin(); contest_i != bpm_contest_lo.end(); ++contest_i)
 			{
 				(*contest_i).second=((*contest_i).second/contest_max)*finish_line;
 			}
@@ -354,13 +354,13 @@ void BeatDetektor::process(float timer_seconds, std::vector<float> &fft_data)
 		
 		
 		// decay contest values from last loop
-		for (contest_i = bpm_contest.begin(); contest_i != bpm_contest.end(); contest_i++)
+		for (contest_i = bpm_contest.begin(); contest_i != bpm_contest.end(); ++contest_i)
 		{
 			(*contest_i).second-=(*contest_i).second*(last_update/detection_rate);
 		}
 		
 		// decay contest values from last loop
-		for (contest_i = bpm_contest_lo.begin(); contest_i != bpm_contest_lo.end(); contest_i++)
+		for (contest_i = bpm_contest_lo.begin(); contest_i != bpm_contest_lo.end(); ++contest_i)
 		{
 			(*contest_i).second-=(*contest_i).second*(last_update/detection_rate);
 		}
@@ -389,7 +389,7 @@ void BeatDetektor::process(float timer_seconds, std::vector<float> &fft_data)
 			win_val = 0;
 			
 			// find the overall winner so far
-			for (contest_i = bpm_contest.begin(); contest_i != bpm_contest.end(); contest_i++)
+			for (contest_i = bpm_contest.begin(); contest_i != bpm_contest.end(); ++contest_i)
 			{
 				if (win_val < (*contest_i).second)
 				{
@@ -408,7 +408,7 @@ void BeatDetektor::process(float timer_seconds, std::vector<float> &fft_data)
 			win_val_lo = 0;		
 			
 			// find the overall winner so far
-			for (contest_i = bpm_contest_lo.begin(); contest_i != bpm_contest_lo.end(); contest_i++)
+			for (contest_i = bpm_contest_lo.begin(); contest_i != bpm_contest_lo.end(); ++contest_i)
 			{
 				if (win_val_lo < (*contest_i).second)
 				{
@@ -431,7 +431,7 @@ void BeatDetektor::process(float timer_seconds, std::vector<float> &fft_data)
 				std::map<int, int>::iterator contrib_i;
 				
 				printf("contrib: ");
-				for (contrib_i = contribution_counter.begin(); contrib_i !=  contribution_counter.end(); contrib_i++)
+				for (contrib_i = contribution_counter.begin(); contrib_i !=  contribution_counter.end(); ++contrib_i)
 				{
 					printf("%d: %d \t",(*contrib_i).first,(*contrib_i).second);
 				}
